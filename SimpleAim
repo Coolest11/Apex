@@ -1,0 +1,68 @@
+Vector3 Vector3::to_angle() const
+{
+	Vector3 angles;
+ 
+	if (y == 0.0f && x == 0.0f)
+	{
+		angles.x = (z > 0.0f) ? 270.0f : 90.0f;
+		angles.y = 0.0f;
+	}
+	else
+	{
+		angles.x = std::atan2(-z, length2d()) * -180 / M_PI;
+		angles.y = std::atan2(y, x) * 180 / M_PI;
+ 
+		if (angles.y > 90)
+			angles.y -= 180;
+		else if (angles.y < 90)
+			angles.y += 180;
+		else if (angles.y == 90)
+			angles.y = 0;
+	}
+ 
+	angles.z = 0.0f;
+ 
+	return angles;
+}
+ 
+Vector3 Vector3::Clamp()
+{
+	if (x > 180)
+		x -= 360;
+	else if (x < -180)
+		x += 360;
+ 
+	if (y > 180)
+		y -= 360;
+	else if (y < -180)
+		y += 360;
+ 
+	if (x < -89)
+		x = -89;
+ 
+	if (x > 89)
+		x = 89;
+ 
+	while (y < -180.0f)
+		y += 360.0f;
+ 
+	while (y > 180.0f)
+		y -= 360.0f;
+ 
+	z = 0;
+ 
+	return *this;
+}
+ 
+...
+ 
+constexpr float smoothing{30.f};
+const auto enemy_head_pos = read_memory<Vector3>(aim_entity + 0x3AA0);
+auto new_angles = (local_entity.head_position - enemy_head_pos).to_angle().Clamp();
+const auto recoil = read_memory<Vector3>(local_entity.entity + 0x2014);
+new_angles -= recoil;
+ 
+const auto delta = (new_angles - local_entity.local_view_angles) /= smoothing;
+new_angles = local_entity.local_view_angles + delta;
+ 
+write_memory(local_entity.entity + 0x20B8, new_angles);
